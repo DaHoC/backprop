@@ -1,0 +1,185 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[english,ngerman]{babel}
+\usepackage{amsmath, amssymb, wasysym}
+\usepackage{textcomp}
+\usepackage{graphicx}           % Grafikpaket
+%\usepackage{graphs}		% c.f. http://www8.cs.umu.se/~drewes/graphs/
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+% \usepackage[latin9]{inputenc}   % Zeichensatz
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{caption}           % Paket um Bildunterschriften ändern zu können
+\usepackage{rotating}           % zum rotieren von Elementen
+\usepackage{color}
+
+\usepackage{tikz}
+
+% Abstand nach Bildunterschriften etwas vergrößern
+%\addtolength{\belowcaptionskip}{0.2cm}
+
+% Listensymbol einstellen
+\renewcommand{\labelitemii}{$\diamond$}
+
+% Format der Bildunterschriften ändern
+\renewcommand{\captionfont}{\small\itshape}
+
+% Schriftart setzen
+\renewcommand{\familydefault}{\sfdefault}
+
+\definecolor{orange}{rgb}{1,0.5,0}
+
+% Schriftart für Überschriften setzen
+%\setkomafont{sectioning}{\bf\rmfamily}
+
+% Seitenränder setzen
+\usepackage[top=1cm, left=0.5cm, right=0.5cm, bottom=1.2cm]{geometry}
+
+%% And now it goes looooose :)
+\begin{document}
+
+\begin{center}
+{\LARGE Herleitung \& Funktionsweise von Backpropagation of Error}
+\end{center}
+
+\begin{itemize}
+
+%\item[]
+%\underline{Zunächst Nomenklatur des Netzausschnittes:}
+
+\item[]
+\underline{Nähere Informationen:}
+\\
+Hierin wird beschrieben, wie ein künstliches Neuronales Netz des Typs Multi-Layer-Perzeptron mit Backpropagation of Error trainiert wird.
+\\
+Es wird Grundwissen vorausgesetzt, interessierte Fachfremde verweise ich auf:
+\\
+\url{http://dkriesel.com/science/neural_networks}.
+
+\item[]
+\underline{Netztopologie:}
+\def\layersep{2.5cm}
+
+\begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
+    \tikzstyle{every pin edge}=[<-,shorten <=1pt]
+    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=17pt,inner sep=0pt]
+    \tikzstyle{input neuron}=[neuron, fill=green!50];
+    \tikzstyle{output neuron}=[neuron, fill=red!50];
+    \tikzstyle{hidden neuron}=[neuron, fill=blue!50];
+    \tikzstyle{annot} = [text width=4em, text centered]
+
+    % Draw the input layer nodes
+    \foreach \name / \y in {1,...,3}
+    % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
+        \node[input neuron, pin=left:$x_\y$] (I-\name) at (0,-\y) {$\diagup$};
+
+        \node[pin=left:$\vdots$] (I-4) at (0,-4) {};
+
+        \node[input neuron, pin=left:$x_N$] (I-5) at (0,-5) {$\diagup$};
+
+    % Draw the hidden layer nodes
+    \foreach \name / \y in {1,...,5}
+        \path[yshift=0.5cm]
+            node[hidden neuron] (H-\name) at (\layersep,-\y cm) {$\frac{\sim}{\sum}$};
+
+    % Draw the output layer node
+    \node[output neuron,pin={[pin edge={->}]right:$y_1$}, right of=H-3] (O) {};
+
+    % Connect every node in the input layer with every node in the
+    % hidden layer.
+    \foreach \source in {1,...,3}
+        \foreach \dest in {1,...,5}
+            \path (I-\source) edge (H-\dest);
+
+    \foreach \source in {5,...,5}
+        \foreach \dest in {1,...,5}
+            \path (I-\source) edge (H-\dest);
+
+    % Connect every node in the hidden layer with the output layer
+    \foreach \source in {1,...,5}
+        \path (H-\source) edge (O);
+
+    % Annotate the layers
+    \node[annot,above of=H-1, node distance=1cm] (hl) {Hidden layer};
+    \node[annot,left of=hl] {Input layer};
+    \node[annot,right of=hl] {Output layer};
+\end{tikzpicture}
+
+\item[]
+\underline{Fehlerfunktion:}
+\begin{align*}
+F &= \sum_{p \in P} \ ^pE \\
+^p E &= \frac{1}{2} \sum_{j \in M} \left(\hat{y}_m - y_m \right)^2
+\end{align*}
+
+\item[]
+\underline{Fehler der Gewichte:}
+\begin{align*}
+^p \vartriangle w_{hm} &\sim - \nabla_w \cdot \ ^p E \\
+\vartriangle w_{hm} &= - \eta \textcolor{red}{\frac{\partial E \left( w_{hm} \right) }{ \partial w_{hm}} }
+\end{align*}
+
+\item[]
+\underline{Für ein Output-Neuron:}
+
+$net_m = \sum_{i=0}^H w_{im} \tilde{o}_i$
+
+$o_m = y_m = f_m(net_m) $
+
+$ \textcolor{red}{\frac{\partial E \left( w_{hm} \right) }{ \partial w_{hm} }} = \textcolor{magenta}{\frac{\partial E }{ \partial net_m }} \cdot \textcolor{green}{\frac{ \partial net_m }{ \partial w_{hm} }}$
+
+\begin{align*}
+\textcolor{green}{\frac{\partial net_m }{ \partial w_{hm} }} &= \frac{ \partial }{ \partial w_{hm} } \cdot net_m \\
+&= \frac{ \partial }{ \partial w_{hm} } \sum_{i=0}^H w_{im} \tilde{o}_i \\
+&= \sum_{i=0}^H \frac{ \partial }{ \partial w_{hm} } w_{im} \tilde{o}_i \\
+&= \frac{ \partial }{ \partial w_{hm} } \tilde{o}_h w_{hm} \\
+&= \text{\textcolor{green}{\framebox{$ \tilde{o}_h $}}} \\
+\\
+\textcolor{magenta}{\frac{\partial E }{ \partial net_m }} &= \frac{ \partial E }{ \partial y_m } \cdot \textcolor{orange}{\frac{ \partial y_m }{ \partial net_m }} \ \left( = \textcolor{magenta}{- \delta_m} \right) \\
+&= \frac{ \partial E }{ \partial y_m } \cdot \frac{ \partial }{ \partial net_m } f_m(net_m) \\
+&= \underbrace{\textcolor{blue}{\frac{ \partial E }{ \partial y_m }} \cdot \text{\textcolor{orange}{\framebox{$ f'_m (net_m) $}}}}_{=: -\delta_m} \\
+\\
+\textcolor{blue}{\frac{ \partial E }{ \partial y_m }} &= \frac{ \partial }{ \partial y_m } \cdot \frac{1}{2} \sum_{j=1}^M \left( \hat{y}_j - y_j \right)^2 \\
+&= \text{\textcolor{blue}{\framebox{$ - (\hat{y}_m - y_m) $}}} \\
+\end{align*}
+
+\begin{align*}
+\vartriangle w_{hm} &= - \eta \textcolor{red}{\frac{ \partial E }{ \partial w_{hm} }} \\
+&= \textcolor{blue}{-} \eta \textcolor{blue}{\frac{ \partial E }{ \partial y_m }} \textcolor{orange}{\frac{ \partial y_m}{ \partial net_m}} \textcolor{green}{\frac{ \partial net_m}{ \partial w_{hm}}} \\
+&= \eta \textcolor{blue}{\left( \hat{y}_m - y_m \right)} \textcolor{orange}{f'_m(net_m)} \textcolor{green}{\tilde{o}_h}
+\end{align*}
+
+\framebox{$ \vartriangle w_{hm} = \eta \cdot \delta_m \cdot \tilde{o}_h $}
+Widrow-Hoff-Regel / $\delta$-Regel
+\\
+
+\item[]
+\underline{Für ein Hidden-Neuron:}
+
+$net_h = \sum_{i=0}^H w_{ih} \tilde{o}_i$
+
+$ \textcolor{red}{\frac{\partial E }{ \partial w_{kh} }} = \textcolor{magenta}{\frac{\partial E }{ \partial net_h }} \cdot \textcolor{green}{\frac{ \partial net_h }{ \partial w_{kh} } }$
+
+\begin{align*}
+\delta_h &= - \textcolor{magenta}{\frac{ \partial E }{ \partial net_h}} \\
+&= \textcolor{blue}{- \frac{ \partial E }{ \partial o_h}} \cdot \textcolor{orange}{\frac{ \partial o_h }{ \partial net_h}} \\
+\\
+\textcolor{blue}{- \frac{ \partial E }{ \partial o_h}} &= - \frac{ \partial E \left( \underline{net}_{l=1} , \underline{net}_{l=2} , \hdots , \underline{net}_{l=L} \right) }{ \partial o_h} \\
+&= \sum_{l=1}^L \left( - \frac{ \partial E}{ \partial \underline{net}_l } \right) \cdot \frac{ \partial \underline{net}_l }{ \partial o_h} \\
+&= \sum_{l=1}^L \underline{\delta}_l \cdot \frac{ \partial }{ \partial o_h} \sum_{j=0}^H \underline{w}_{jl} \cdot o_j \\
+&= \textcolor{blue}{\sum_{l=1}^L \underline{\delta}_l \cdot \underline{w}_{hl}}
+\end{align*}
+
+\framebox{$\delta_h = \textcolor{blue}{\sum_{l=1}^L \left( \underline{\delta}_l \cdot \underline{w}_{hl} \right)} \cdot \textcolor{orange}{f'\left( net_h \right)}$}
+
+\framebox{$ \vartriangle w_{kh} = \eta \cdot \delta_h \cdot \tilde{o}_k $}
+
+\item[]
+\underline{Kontakt:}
+\\
+hendriks@cs.uni-bonn.de
+
+\end{itemize}
+
+\end{document}
